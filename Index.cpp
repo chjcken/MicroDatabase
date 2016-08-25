@@ -7,64 +7,16 @@
 
 #include "Index.h"
 
-Index::Index(string& dbName, Storage* storage): _storage(storage) {	
+Index::Index(const string& dbName, Storage* storage) : _storage(storage) {
 	_initialize(dbName);
 }
 
 Index::~Index() {
 }
 
-void Index::_initialize(string& dbName) {
-	int fd;
-	int result;
-
-	/* Open a file for writing.
-	 *  - Creating the file if it doesn't exist.
-	 *  - Truncating it to 0 size if it already exists. (not really needed)
-	 *
-	 * Note: "O_WRONLY" mode is not sufficient when mmaping.
-	 */
+void Index::_initialize(const string& dbName) {
 	string indexPath = DATA_DIRECTORY + dbName + "/index.dat";
-	fd = open(indexPath.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0600);
-	if (fd == -1) {
-		printf("Error opening file for writing");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Stretch the file size to the size of the (mmapped) array of ints
-	 */
-	result = lseek(fd, INDEX_FILE_SIZE - 1, SEEK_SET);
-	if (result == -1) {
-		close(fd);
-		printf("Error calling lseek() to 'stretch' the file");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Something needs to be written at the end of the file to
-	 * have the file actually have the new size.
-	 * Just writing an empty string at the current file position will do.
-	 *
-	 * Note:
-	 *  - The current position in the file is at the end of the stretched 
-	 *    file due to the call to lseek().
-	 *  - An empty string is actually a single '\0' character, so a zero-byte
-	 *    will be written at the last byte of the file.
-	 */
-	result = write(fd, "", 1);
-	if (result != 1) {
-		close(fd);
-		printf("Error writing last byte of the file");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Now the file is ready to be mmapped.
-	 */
-	__bucketTable = (Bucket*) mmap(0, INDEX_FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if (__bucketTable == MAP_FAILED) {
-		close(fd);
-		printf("Error mmapping the file");
-		exit(EXIT_FAILURE);
-	}
+	__bucketTable = (Bucket*) initMMapData(indexPath, INDEX_FILE_SIZE);
 }
 
 uint64_t Index::getSize() {
@@ -79,39 +31,32 @@ bool Index::isBucketCollision(Bucket& bucket) {
 	return bucket.lastColRecOffset < 1;
 }
 
-uint64_t Index::_hash(string& key) {	
-    uint64_t h = 0;
-	size_t keySize = key.size();
-    if (keySize > 0) {
-        const char* val = key.c_str();
+Err::Code Index::getBucket(const string& key, Bucket** ret) {
+	//Poco::ScopedReadRWLock readLock(*_bucketTableLock);
+	uint64_t _hash = hashF(key);
+	uint64_t bucketIndex = _hash % INDEX_SIZE;
+	*ret = &__bucketTable[bucketIndex];
 
-        for (int i = 0; i < keySize; i++) {
-            h = 31 * h + val[i];
-        }
-    }
-    return h;
-}
-
-Err::Code Index::getBucket(string& key, Bucket& ret) {
-	uint64_t hash = _hash(key);
-	uint64_t bucketIndex = hash % INDEX_SIZE;
-	ret = __bucketTable[bucketIndex];
-	
 	return Err::SUCCESS;
 }
 
+uint64_t Index::getRecordOffset(const string& key) {
+	Bucket * b;
+	getBucket(key, &b);
+	return b->recordOffset;
+}
 
-Err::Code Index::addRecord(string& key, uint64_t offset) {
-	Bucket buck;
-	Err::Code err = getBucket(key, buck);
+Err::Code Index::addRecord(const string& key, uint64_t offset) {
+	Bucket * buck;
+	Err::Code err = getBucket(key, &buck);
 	if (err != Err::SUCCESS) {
 		return err;
 	}
-	return _addRecordToBucket(buck, offset);
+	return _addRecordToBucket(*buck, offset);
 }
 
 Err::Code Index::_addRecordToBucket(Bucket& bucket, uint64_t recOffset) {
-	if (isBucketEmpty(bucket)) {
+	if (isBucketEmpty(bucket)) { // if bucket is empty, just add record to bucket and done
 		bucket.recordOffset = recOffset;
 		return Err::SUCCESS;
 	}
@@ -122,17 +67,68 @@ Err::Code Index::_addRecordToBucket(Bucket& bucket, uint64_t recOffset) {
 	} else {
 		__recOff = bucket.lastColRecOffset;
 	}
-	Record rec;
-	Err::Code err = _storage->readRecord(__recOff, rec);
-	if (err != Err::SUCCESS || rec.nxtColRecOffset < 1) {
-		return err;
-	}
-	rec.nxtColRecOffset = recOffset;
-	err = _storage->writeRecord(rec, __recOff);
+	Err::Code err;
+
+	err = _storage->writeNxtColRecOff(recOffset, __recOff);
+
 	if (err == Err::SUCCESS) {
 		bucket.lastColRecOffset = recOffset;
 	}
 	return err;
 }
 
+void Index::_clearBucket(Bucket& bucket) {
+	bucket.recordOffset = 0;
+	bucket.lastColRecOffset = 0;
+}
+
+Err::Code Index::removeRecord(const string& key, uint64_t recOffset) {
+	Bucket * buck;
+	Err::Code err = getBucket(key, &buck);
+	if (err != Err::SUCCESS) {
+		return err;
+	}
+	if (isBucketEmpty(*buck)) {
+		return Err::SUCCESS;
+	}
+	if (!isBucketCollision(*buck)) {
+		if (buck->recordOffset == recOffset) {
+			_clearBucket(*buck);
+			return Err::SUCCESS;
+		} else {
+			return Err::NOT_EXIST;
+		}
+	}
+
+	Record rec;
+	int64_t recOff = buck->recordOffset;
+
+	if (recOff == recOffset) { //record to be removed is in bucket
+		uint64_t nxtColRecOff = _storage->readNxtColRecOff(recOff);
+		if (nxtColRecOff < 1) {
+			return Err::FAIL;
+		}
+		buck->recordOffset = nxtColRecOff; //push next record up to bucket
+		return Err::SUCCESS;
+	}
+
+	while (recOff >= 0) {		
+		err = _storage->readRecord(recOff, rec);
+		uint64_t nxtColRecOff = _storage->readNxtColRecOff(recOff);
+		if (nxtColRecOff < 1) {
+			return Err::FAIL;
+		}
+		if (nxtColRecOff == recOffset) { //next record is our target
+			uint64_t nxtColRecOffOfRmv = _storage->readNxtColRecOff(recOffset); //read next record of removed record
+			if (nxtColRecOffOfRmv < 1) {
+				return Err::FAIL;
+			}
+			err = _storage->writeNxtColRecOff(nxtColRecOffOfRmv, recOff); //write next record of removed record to current record
+			return err;
+		}
+		recOff = nxtColRecOff;
+	}
+
+	return Err::NOT_EXIST;
+}
 

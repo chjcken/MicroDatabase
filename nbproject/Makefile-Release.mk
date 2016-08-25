@@ -35,8 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/Database.o \
 	${OBJECTDIR}/IOControl.o \
 	${OBJECTDIR}/Index.o \
+	${OBJECTDIR}/Profiler.o \
 	${OBJECTDIR}/Storage.o \
 	${OBJECTDIR}/main.o
 
@@ -65,6 +67,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/microdatabase: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/microdatabase ${OBJECTFILES} ${LDLIBSOPTIONS}
 
+${OBJECTDIR}/Database.o: Database.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Database.o Database.cpp
+
 ${OBJECTDIR}/IOControl.o: IOControl.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -74,6 +81,11 @@ ${OBJECTDIR}/Index.o: Index.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Index.o Index.cpp
+
+${OBJECTDIR}/Profiler.o: Profiler.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Profiler.o Profiler.cpp
 
 ${OBJECTDIR}/Storage.o: Storage.cpp 
 	${MKDIR} -p ${OBJECTDIR}

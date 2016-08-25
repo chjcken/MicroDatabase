@@ -31,7 +31,7 @@ Err::Code Storage::writeRecord(Record& rec, uint64_t offset, bool ioCtrl) {
 	_offset = _writeData(fd, _offset, &keySize, sizeof (keySize));
 	_offset = _writeData(fd, _offset, &valueSize, sizeof (valueSize));
 	_offset = _writeData(fd, _offset, &rec.nxtColRecOffset, sizeof (rec.nxtColRecOffset));
-	_offset = _writeData(fd, _offset, &rec.key.c_str(), keySize);
+	_offset = _writeData(fd, _offset, rec.key.c_str(), keySize);
 	_offset = _writeData(fd, _offset, rec.value.c_str(), valueSize);
 	if (ioCtrl) {
 		size_t recSize = 0;
@@ -45,6 +45,41 @@ Err::Code Storage::writeRecord(Record& rec, uint64_t offset, bool ioCtrl) {
 
 	return Err::SUCCESS;
 }
+
+Err::Code Storage::writeNxtColRecOff(uint64_t nextColOff, uint64_t recOff) {
+	FileDescriptor fd;
+	uint64_t _offset = _getFileDescriptor(recOff, fd);
+	
+	_offset += sizeof (size_t);
+	_offset += sizeof (size_t);
+	
+	_writeData(fd, _offset, &nextColOff, sizeof (nextColOff));
+	
+	return Err::SUCCESS;
+}
+
+Err::Code Storage::writeRecord(const string& key, const string& value, uint64_t offset, bool ioCtrl) {
+	FileDescriptor fd;
+	uint64_t _offset = _getFileDescriptor(offset, fd);
+	
+	size_t keySize = key.size();
+	size_t valueSize = value.size();
+	
+	_offset += sizeof (keySize);
+	_offset = _writeData(fd, _offset, &valueSize, sizeof (valueSize));
+	_offset += sizeof (uint64_t);
+	_offset += keySize;
+	_offset = _writeData(fd, _offset, value.c_str(), valueSize);
+	if (ioCtrl) {
+		size_t recSize = 0;
+		recSize += sizeof (valueSize);
+		recSize += valueSize;
+		_ioCtl.onWrite(recSize);
+	}
+
+	return Err::SUCCESS;
+}
+
 
 Err::Code Storage::readRecord(uint64_t offset, Record& ret, bool ioCtrl) {
 	FileDescriptor fd;
@@ -72,6 +107,18 @@ Err::Code Storage::readRecord(uint64_t offset, Record& ret, bool ioCtrl) {
 	}
 
 	return Err::SUCCESS;
+}
+
+uint64_t Storage::readNxtColRecOff(uint64_t recOff) {
+	FileDescriptor fd;
+	uint64_t _offset = _getFileDescriptor(recOff, fd);
+	
+	_offset += sizeof (size_t); //jump to key size
+	_offset += sizeof (size_t);// jump to value size
+	
+	uint64_t ret;
+	_readData(fd, _offset, &ret, sizeof (ret));
+	return ret;
 }
 
 bool Storage::_warmUp() {

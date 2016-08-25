@@ -18,13 +18,13 @@ typedef struct Bucket {
 
 class Index {
 public:
-    Index(string& dbName, Storage* storage);
+    Index(const string& dbName, Storage* storage);
     virtual ~Index();
     
-    Err::Code addRecord(string& key, uint64_t offset);
-    Err::Code removeRecord(string& key);    
-    Err::Code getBucket(string& key, Bucket& ret);
-    uint64_t getRecordOffset(string& key);
+    Err::Code addRecord(const string& key, uint64_t offset);
+    Err::Code removeRecord(const string& key, uint64_t recOffset);    
+    Err::Code getBucket(const string& key, Bucket** ret);
+    uint64_t getRecordOffset(const string& key);
     uint64_t getSize();
     
     bool isBucketCollision(Bucket& bucket);
@@ -36,9 +36,8 @@ private:
     RWLockPtr _bucketTableLock;
     vector<RWLockPtr> *_listRWLock;
     
-    void _initialize();
-    uint64_t _hash(string& key);
-    uint64_t _getBucketIndex(string& key);
+    void _initialize(const string& dbName);
+    uint64_t _getBucketIndex(const string& key);
     Err::Code _getBucket(uint64_t bucketIndex, Bucket& ret);
     
     void _clearBucket(Bucket& bucket);

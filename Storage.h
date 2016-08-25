@@ -25,7 +25,10 @@ public:
     ~Storage();
         
     Err::Code readRecord(uint64_t offset, Record &ret, bool ioCtrl = false);
-    Err::Code writeRecord(Record& rec, uint64_t offset, bool ioCtrl = false);    
+    uint64_t readNxtColRecOff(uint64_t recOff);
+    Err::Code writeRecord(Record& rec, uint64_t offset, bool ioCtrl = false);
+    Err::Code writeNxtColRecOff(uint64_t nextColOff, uint64_t recOff);
+    Err::Code writeRecord(const string& key, const string& value, uint64_t offset, bool ioCtrl = false);
     
     void checkDataSize();
 private:
