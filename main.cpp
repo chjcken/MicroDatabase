@@ -6,7 +6,7 @@
  */
 
 #include <cstdlib>
-#include "Database.h"
+#include "MicroDatabaseServer.h"
 
 using namespace std;
 
@@ -14,15 +14,10 @@ using namespace std;
  * 
  */
 int main(int argc, char** argv) {
+	DBConfig* c = DBConfig::instance();
 	
-	Database db("test");
-	Err::Code err = db.put("key", "value");
-	printf("put err: %d\n", err);
-	
-	string v;
-	err = db.get("key", v);
-	
-	printf("get val: %d - %s", err, v.c_str());
+	MicroDatabaseServer server;
+	server.start();
 	
 	return 0;
 }

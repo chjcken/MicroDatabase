@@ -6,11 +6,16 @@
                    projectFiles="true">
       <itemPath>DBCommon.h</itemPath>
       <itemPath>DBConfig.h</itemPath>
-      <itemPath>Database.h</itemPath>
+      <itemPath>DatabaseModel.h</itemPath>
       <itemPath>IOControl.h</itemPath>
       <itemPath>Index.h</itemPath>
+      <itemPath>MicroDatabase.h</itemPath>
+      <itemPath>MicroDatabaseServer.h</itemPath>
       <itemPath>Profiler.h</itemPath>
       <itemPath>Storage.h</itemPath>
+      <itemPath>WriteWorker.h</itemPath>
+      <itemPath>microdatabase_constants.h</itemPath>
+      <itemPath>microdatabase_types.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -19,12 +24,18 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>Database.cpp</itemPath>
+      <itemPath>DatabaseModel.cpp</itemPath>
       <itemPath>IOControl.cpp</itemPath>
       <itemPath>Index.cpp</itemPath>
+      <itemPath>MicroDatabase.cpp</itemPath>
+      <itemPath>MicroDatabaseServer.cpp</itemPath>
+      <itemPath>MicroDatabaseserver.cpp</itemPath>
       <itemPath>Profiler.cpp</itemPath>
       <itemPath>Storage.cpp</itemPath>
+      <itemPath>WriteWorker.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
+      <itemPath>microdatabase_constants.cpp</itemPath>
+      <itemPath>microdatabase_types.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -50,12 +61,17 @@
         <ccTool>
           <incDir>
             <pElem>/usr/include/Poco</pElem>
+            <pElem>/usr/local/include/thrift</pElem>
           </incDir>
         </ccTool>
         <linkerTool>
           <linkerLibItems>
             <linkerLibStdlibItem>PosixThreads</linkerLibStdlibItem>
+            <linkerLibFileItem>/usr/local/lib/libthriftnb.a</linkerLibFileItem>
+            <linkerLibFileItem>/usr/local/lib/libthrift.a</linkerLibFileItem>
             <linkerLibFileItem>/usr/lib/libPocoFoundation.so</linkerLibFileItem>
+            <linkerLibFileItem>/usr/lib/libPocoUtil.so</linkerLibFileItem>
+            <linkerOptionItem>`pkg-config --libs libevent`</linkerOptionItem>
           </linkerLibItems>
         </linkerTool>
       </compileType>
@@ -63,9 +79,9 @@
       </item>
       <item path="DBConfig.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="Database.cpp" ex="false" tool="1" flavor2="0">
+      <item path="DatabaseModel.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="Database.h" ex="false" tool="3" flavor2="0">
+      <item path="DatabaseModel.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="IOControl.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -75,6 +91,16 @@
       </item>
       <item path="Index.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="MicroDatabase.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MicroDatabase.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MicroDatabaseServer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MicroDatabaseServer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MicroDatabaseserver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="Profiler.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Profiler.h" ex="false" tool="3" flavor2="0">
@@ -83,7 +109,19 @@
       </item>
       <item path="Storage.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="WriteWorker.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="WriteWorker.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="microdatabase_constants.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="microdatabase_constants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="microdatabase_types.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="microdatabase_types.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -110,9 +148,9 @@
       </item>
       <item path="DBConfig.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="Database.cpp" ex="false" tool="1" flavor2="0">
+      <item path="DatabaseModel.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="Database.h" ex="false" tool="3" flavor2="0">
+      <item path="DatabaseModel.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="IOControl.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -122,6 +160,16 @@
       </item>
       <item path="Index.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="MicroDatabase.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MicroDatabase.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MicroDatabaseServer.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MicroDatabaseServer.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MicroDatabaseserver.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="Profiler.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Profiler.h" ex="false" tool="3" flavor2="0">
@@ -130,7 +178,19 @@
       </item>
       <item path="Storage.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="WriteWorker.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="WriteWorker.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="microdatabase_constants.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="microdatabase_constants.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="microdatabase_types.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="microdatabase_types.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

@@ -9,6 +9,7 @@
 #define	DBCOMMON_H
 
 #include <vector>
+#include <queue>
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
@@ -23,6 +24,9 @@
 #include <Poco/RWLock.h>
 #include <Poco/Event.h>
 #include <Poco/Timestamp.h>
+#include <Poco/ThreadPool.h>
+#include <Poco/Thread.h>
+#include <Poco/Runnable.h>
 #include <time.h>
 #include <sys/time.h>
 #include <fcntl.h>
@@ -132,12 +136,12 @@ typedef shared_ptr<Poco::RWLock> RWLockPtr;
 
 typedef struct {
     enum Code {
-        SUCCESS,
-        NOT_EXIST,
-        FAIL,
-        ERROR
+        SUCCESS = 0,
+        FAIL = 1,
+        NOT_EXIST = 2,
+        PARAM_OVERSIZE = 3
     };
-} Err;
+} Error;
 
 typedef struct {
     uint64_t currentOffset;

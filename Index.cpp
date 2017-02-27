@@ -16,11 +16,11 @@ Index::~Index() {
 
 void Index::_initialize(const string& dbName) {
 	string indexPath = DATA_DIRECTORY + dbName + "/index.dat";
-	__bucketTable = (Bucket*) initMMapData(indexPath, INDEX_FILE_SIZE);
+	__bucketTable = (Bucket*) initMMapData(indexPath, DBConfig::instance()->index_file_size);
 }
 
 uint64_t Index::getSize() {
-	return INDEX_SIZE;
+	return DBConfig::instance()->index_size;
 }
 
 bool Index::isBucketEmpty(Bucket& bucket) {
@@ -31,13 +31,13 @@ bool Index::isBucketCollision(Bucket& bucket) {
 	return bucket.lastColRecOffset < 1;
 }
 
-Err::Code Index::getBucket(const string& key, Bucket** ret) {
+Error::Code Index::getBucket(const string& key, Bucket** ret) {
 	//Poco::ScopedReadRWLock readLock(*_bucketTableLock);
 	uint64_t _hash = hashF(key);
-	uint64_t bucketIndex = _hash % INDEX_SIZE;
+	uint64_t bucketIndex = _hash % DBConfig::instance()->index_size;
 	*ret = &__bucketTable[bucketIndex];
 
-	return Err::SUCCESS;
+	return Error::SUCCESS;
 }
 
 uint64_t Index::getRecordOffset(const string& key) {
@@ -46,19 +46,19 @@ uint64_t Index::getRecordOffset(const string& key) {
 	return b->recordOffset;
 }
 
-Err::Code Index::addRecord(const string& key, uint64_t offset) {
+Error::Code Index::addRecord(const string& key, uint64_t offset) {
 	Bucket * buck;
-	Err::Code err = getBucket(key, &buck);
-	if (err != Err::SUCCESS) {
+	Error::Code err = getBucket(key, &buck);
+	if (err != Error::SUCCESS) {
 		return err;
 	}
 	return _addRecordToBucket(*buck, offset);
 }
 
-Err::Code Index::_addRecordToBucket(Bucket& bucket, uint64_t recOffset) {
+Error::Code Index::_addRecordToBucket(Bucket& bucket, uint64_t recOffset) {
 	if (isBucketEmpty(bucket)) { // if bucket is empty, just add record to bucket and done
 		bucket.recordOffset = recOffset;
-		return Err::SUCCESS;
+		return Error::SUCCESS;
 	}
 	//add record to collision chain
 	uint64_t __recOff;
@@ -67,11 +67,11 @@ Err::Code Index::_addRecordToBucket(Bucket& bucket, uint64_t recOffset) {
 	} else {
 		__recOff = bucket.lastColRecOffset;
 	}
-	Err::Code err;
+	Error::Code err;
 
 	err = _storage->writeNxtColRecOff(recOffset, __recOff);
 
-	if (err == Err::SUCCESS) {
+	if (err == Error::SUCCESS) {
 		bucket.lastColRecOffset = recOffset;
 	}
 	return err;
@@ -82,21 +82,21 @@ void Index::_clearBucket(Bucket& bucket) {
 	bucket.lastColRecOffset = 0;
 }
 
-Err::Code Index::removeRecord(const string& key, uint64_t recOffset) {
+Error::Code Index::removeRecord(const string& key, uint64_t recOffset) {
 	Bucket * buck;
-	Err::Code err = getBucket(key, &buck);
-	if (err != Err::SUCCESS) {
+	Error::Code err = getBucket(key, &buck);
+	if (err != Error::SUCCESS) {
 		return err;
 	}
 	if (isBucketEmpty(*buck)) {
-		return Err::SUCCESS;
+		return Error::SUCCESS;
 	}
 	if (!isBucketCollision(*buck)) {
 		if (buck->recordOffset == recOffset) {
 			_clearBucket(*buck);
-			return Err::SUCCESS;
+			return Error::SUCCESS;
 		} else {
-			return Err::NOT_EXIST;
+			return Error::NOT_EXIST;
 		}
 	}
 
@@ -106,22 +106,22 @@ Err::Code Index::removeRecord(const string& key, uint64_t recOffset) {
 	if (recOff == recOffset) { //record to be removed is in bucket
 		uint64_t nxtColRecOff = _storage->readNxtColRecOff(recOff);
 		if (nxtColRecOff < 1) {
-			return Err::FAIL;
+			return Error::FAIL;
 		}
 		buck->recordOffset = nxtColRecOff; //push next record up to bucket
-		return Err::SUCCESS;
+		return Error::SUCCESS;
 	}
 
 	while (recOff >= 0) {		
 		err = _storage->readRecord(recOff, rec);
 		uint64_t nxtColRecOff = _storage->readNxtColRecOff(recOff);
 		if (nxtColRecOff < 1) {
-			return Err::FAIL;
+			return Error::FAIL;
 		}
 		if (nxtColRecOff == recOffset) { //next record is our target
 			uint64_t nxtColRecOffOfRmv = _storage->readNxtColRecOff(recOffset); //read next record of removed record
 			if (nxtColRecOffOfRmv < 1) {
-				return Err::FAIL;
+				return Error::FAIL;
 			}
 			err = _storage->writeNxtColRecOff(nxtColRecOffOfRmv, recOff); //write next record of removed record to current record
 			return err;
@@ -129,6 +129,6 @@ Err::Code Index::removeRecord(const string& key, uint64_t recOffset) {
 		recOff = nxtColRecOff;
 	}
 
-	return Err::NOT_EXIST;
+	return Error::NOT_EXIST;
 }
 

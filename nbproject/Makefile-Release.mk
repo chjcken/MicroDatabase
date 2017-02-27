@@ -35,12 +35,18 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/Database.o \
+	${OBJECTDIR}/DatabaseModel.o \
 	${OBJECTDIR}/IOControl.o \
 	${OBJECTDIR}/Index.o \
+	${OBJECTDIR}/MicroDatabase.o \
+	${OBJECTDIR}/MicroDatabaseServer.o \
+	${OBJECTDIR}/MicroDatabaseserver.o \
 	${OBJECTDIR}/Profiler.o \
 	${OBJECTDIR}/Storage.o \
-	${OBJECTDIR}/main.o
+	${OBJECTDIR}/WriteWorker.o \
+	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/microdatabase_constants.o \
+	${OBJECTDIR}/microdatabase_types.o
 
 
 # C Compiler Flags
@@ -67,10 +73,10 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/microdatabase: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/microdatabase ${OBJECTFILES} ${LDLIBSOPTIONS}
 
-${OBJECTDIR}/Database.o: Database.cpp 
+${OBJECTDIR}/DatabaseModel.o: DatabaseModel.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Database.o Database.cpp
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DatabaseModel.o DatabaseModel.cpp
 
 ${OBJECTDIR}/IOControl.o: IOControl.cpp 
 	${MKDIR} -p ${OBJECTDIR}
@@ -82,6 +88,21 @@ ${OBJECTDIR}/Index.o: Index.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Index.o Index.cpp
 
+${OBJECTDIR}/MicroDatabase.o: MicroDatabase.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/MicroDatabase.o MicroDatabase.cpp
+
+${OBJECTDIR}/MicroDatabaseServer.o: MicroDatabaseServer.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/MicroDatabaseServer.o MicroDatabaseServer.cpp
+
+${OBJECTDIR}/MicroDatabaseserver.o: MicroDatabaseserver.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/MicroDatabaseserver.o MicroDatabaseserver.cpp
+
 ${OBJECTDIR}/Profiler.o: Profiler.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -92,10 +113,25 @@ ${OBJECTDIR}/Storage.o: Storage.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Storage.o Storage.cpp
 
+${OBJECTDIR}/WriteWorker.o: WriteWorker.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/WriteWorker.o WriteWorker.cpp
+
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+
+${OBJECTDIR}/microdatabase_constants.o: microdatabase_constants.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/microdatabase_constants.o microdatabase_constants.cpp
+
+${OBJECTDIR}/microdatabase_types.o: microdatabase_types.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/microdatabase_types.o microdatabase_types.cpp
 
 # Subprojects
 .build-subprojects:

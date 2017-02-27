@@ -21,9 +21,9 @@ public:
     Index(const string& dbName, Storage* storage);
     virtual ~Index();
     
-    Err::Code addRecord(const string& key, uint64_t offset);
-    Err::Code removeRecord(const string& key, uint64_t recOffset);    
-    Err::Code getBucket(const string& key, Bucket** ret);
+    Error::Code addRecord(const string& key, uint64_t offset);
+    Error::Code removeRecord(const string& key, uint64_t recOffset);    
+    Error::Code getBucket(const string& key, Bucket** ret);
     uint64_t getRecordOffset(const string& key);
     uint64_t getSize();
     
@@ -38,10 +38,10 @@ private:
     
     void _initialize(const string& dbName);
     uint64_t _getBucketIndex(const string& key);
-    Err::Code _getBucket(uint64_t bucketIndex, Bucket& ret);
+    Error::Code _getBucket(uint64_t bucketIndex, Bucket& ret);
     
     void _clearBucket(Bucket& bucket);
-    Err::Code _addRecordToBucket(Bucket& bucket, uint64_t recOffset);
+    Error::Code _addRecordToBucket(Bucket& bucket, uint64_t recOffset);
 };
 
 #endif	/* INDEX_H */

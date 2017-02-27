@@ -21,7 +21,7 @@ Storage::Storage(const string& name, DatabaseMeta* metaInfo) : _dbname(name), _l
 Storage::~Storage() {
 }
 
-Err::Code Storage::writeRecord(Record& rec, uint64_t offset, bool ioCtrl) {
+Error::Code Storage::writeRecord(Record& rec, uint64_t offset, bool ioCtrl) {
 	FileDescriptor fd;
 	uint64_t _offset = _getFileDescriptor(offset, fd);
 	
@@ -43,10 +43,10 @@ Err::Code Storage::writeRecord(Record& rec, uint64_t offset, bool ioCtrl) {
 		_ioCtl.onWrite(recSize);
 	}
 
-	return Err::SUCCESS;
+	return Error::SUCCESS;
 }
 
-Err::Code Storage::writeNxtColRecOff(uint64_t nextColOff, uint64_t recOff) {
+Error::Code Storage::writeNxtColRecOff(uint64_t nextColOff, uint64_t recOff) {
 	FileDescriptor fd;
 	uint64_t _offset = _getFileDescriptor(recOff, fd);
 	
@@ -55,10 +55,10 @@ Err::Code Storage::writeNxtColRecOff(uint64_t nextColOff, uint64_t recOff) {
 	
 	_writeData(fd, _offset, &nextColOff, sizeof (nextColOff));
 	
-	return Err::SUCCESS;
+	return Error::SUCCESS;
 }
 
-Err::Code Storage::writeRecord(const string& key, const string& value, uint64_t offset, bool ioCtrl) {
+Error::Code Storage::writeRecord(const string& key, const string& value, uint64_t offset, bool ioCtrl) {
 	FileDescriptor fd;
 	uint64_t _offset = _getFileDescriptor(offset, fd);
 	
@@ -77,11 +77,11 @@ Err::Code Storage::writeRecord(const string& key, const string& value, uint64_t 
 		_ioCtl.onWrite(recSize);
 	}
 
-	return Err::SUCCESS;
+	return Error::SUCCESS;
 }
 
 
-Err::Code Storage::readRecord(uint64_t offset, Record& ret, bool ioCtrl) {
+Error::Code Storage::readRecord(uint64_t offset, Record& ret, bool ioCtrl) {
 	FileDescriptor fd;
 	uint64_t _offset = _getFileDescriptor(offset, fd);
 	
@@ -106,7 +106,7 @@ Err::Code Storage::readRecord(uint64_t offset, Record& ret, bool ioCtrl) {
 		_ioCtl.onRead(recSize);
 	}
 
-	return Err::SUCCESS;
+	return Error::SUCCESS;
 }
 
 uint64_t Storage::readNxtColRecOff(uint64_t recOff) {
@@ -213,7 +213,7 @@ void Storage::checkDataSize() {
 	//		fd_num = _listFileDescriptor.size();
 	//	}
 
-	uint64_t bound = fd_num * STORAGE_FILE_SIZE - RECORD_MAX_SIZE;
+	uint64_t bound = fd_num * STORAGE_FILE_SIZE - DBConfig::instance()->record_max_size;
 	if (_metaInfo->currentOffset >= bound) {
 		bool stt = _createNewDataFile(fd_num);
 		if (!stt) {

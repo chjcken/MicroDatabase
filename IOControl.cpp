@@ -23,6 +23,7 @@ bool IOControl::init(int64_t readLimitSize, int64_t writeLimitSize) {
 void IOControl::close() {
 	_bStop = true;
 	_evWaitRead.set();
+	_evWaitWrite.set();
 }
 
 int64_t IOControl::getReadLimitSize() const {

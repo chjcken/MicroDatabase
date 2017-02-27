@@ -11,15 +11,15 @@
 #include "DBCommon.h"
 #include "Index.h"
 
-class Database {
+class DatabaseModel {
 public:
-    Database(const string& name);
-    virtual ~Database();
+    DatabaseModel(const string& name);
+    virtual ~DatabaseModel();    
     
-    Err::Code get(const string& key, string& value);
-    Err::Code put(const string& key, const string& value);
-    Err::Code exist(const string& key);
-    Err::Code remove(const string& key);
+    Error::Code get(const string& key, string& value);
+    Error::Code put(const string& key, const string& value);
+    Error::Code exist(const string& key);
+    Error::Code remove(const string& key);
 private:
     string _name;
     Index* _index;
@@ -32,7 +32,8 @@ private:
     void _initMeta(const string& name);
     void _initListEmptyRecord(const string& name);
     
-    Err::Code _getRecord(const string& key, Record& ret);
+    bool _isPutDataValid(const string& key, const string& value);
+    Error::Code _getRecord(const string& key, Record& ret);
     uint64_t _getRecordOffset(const string& key);
 };
 

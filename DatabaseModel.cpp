@@ -5,27 +5,29 @@
  * Created on August 24, 2016, 10:37 AM
  */
 
-#include "Database.h"
+#include <Poco/Util/Application.h>
 
-Database::Database(const string& name) : _name(name), _listRWLock(SLOT_LOCK_NUM) {
+#include "DatabaseModel.h"
+
+DatabaseModel::DatabaseModel(const string& name) : _name(name), _listRWLock(DBConfig::instance()->slot_lock_num) {
 	_initialize(name);
 	_storage = new Storage(name, _meta);
 	_index = new Index(name, _storage);
 }
 
-Database::~Database() {
+DatabaseModel::~DatabaseModel() {
 }
 
-void Database::_initialize(const string& name) {
+void DatabaseModel::_initialize(const string& name) {
 	//init lock
 	_listRWLock.clear();
-	for (int16_t i=0; i < SLOT_LOCK_NUM; i++) {		
+	for (int16_t i=0; i < DBConfig::instance()->slot_lock_num; i++) {		
 		RWLockPtr rwLock(new Poco::RWLock());
 		_listRWLock.push_back(rwLock);
 	}
 	
 	//init data directory
-	string dir_path = "/data/mdb/" + name;
+	string dir_path = DATA_DIRECTORY + name;
 	Poco::File dataDir(dir_path);
 	if (!dataDir.exists()) {
 		dataDir.createDirectories();
@@ -38,7 +40,7 @@ void Database::_initialize(const string& name) {
 	_initListEmptyRecord(name);
 }
 
-void Database::_initMeta(const string& dbName) {
+void DatabaseModel::_initMeta(const string& dbName) {
 	string metaPath = DATA_DIRECTORY + dbName + "/meta.dat";
 	size_t metaSize = sizeof (uint64_t) * 3 + sizeof (uint8_t);
 	
@@ -58,39 +60,45 @@ void Database::_initMeta(const string& dbName) {
 	}
 }
 
-void Database::_initListEmptyRecord(const string& name) {
+void DatabaseModel::_initListEmptyRecord(const string& name) {
 	string listEmptyRecPath = DATA_DIRECTORY + name + "/emptyrecords.dat";
-	_listEmptyRecordOffset = (uint64_t*) initMMapData(listEmptyRecPath, REUSE_SLOT_SIZE);
+	_listEmptyRecordOffset = (uint64_t*) initMMapData(listEmptyRecPath, DBConfig::instance()->reuse_slot_size);
 }
 
-Err::Code Database::_getRecord(const string& key, Record& ret) {
+bool DatabaseModel::_isPutDataValid(const string& key, const string& value) {
+	size_t recSize = key.size() + value.size() + sizeof(size_t) * 2 + sizeof (uint64_t);	
+	return recSize <= DBConfig::instance()->record_max_size;
+}
+
+
+Error::Code DatabaseModel::_getRecord(const string& key, Record& ret) {
 	uint64_t recordOffset = _index->getRecordOffset(key);
 
 	if (recordOffset < 1) {
-		return Err::NOT_EXIST;
+		return Error::NOT_EXIST;
 	}
 	while (recordOffset > 0) {
-		Err::Code err = _storage->readRecord(recordOffset, ret);
-		if (err != Err::SUCCESS) {
+		Error::Code err = _storage->readRecord(recordOffset, ret);
+		if (err != Error::SUCCESS) {
 			return err;
 		}
 		if (ret.key == key) {
-			return Err::SUCCESS;
+			return Error::SUCCESS;
 		}
 		recordOffset = ret.nxtColRecOffset;
 	}
-	return Err::NOT_EXIST;
+	return Error::NOT_EXIST;
 }
 
-uint64_t Database::_getRecordOffset(const string& key) {
+uint64_t DatabaseModel::_getRecordOffset(const string& key) {
 	uint64_t recordOffset = _index->getRecordOffset(key);
 	Record ret;
 	if (recordOffset < 1) {
 		return 0;
 	}
 	while (recordOffset > 0) {
-		Err::Code err = _storage->readRecord(recordOffset, ret);
-		if (err != Err::SUCCESS) {
+		Error::Code err = _storage->readRecord(recordOffset, ret);
+		if (err != Error::SUCCESS) {
 			return 0;
 		}
 		if (ret.key == key) {
@@ -101,33 +109,36 @@ uint64_t Database::_getRecordOffset(const string& key) {
 	return 0;
 }
 
-Err::Code Database::get(const string& key, string& value) {
+Error::Code DatabaseModel::get(const string& key, string& value) {
 	RWLockPtr rwlock = _listRWLock.at((hashF(key) % _listRWLock.size()));
 	Poco::ScopedReadRWLock readLock(*rwlock); //read lock
 	
 	Record rec;
-	Err::Code err = _getRecord(key, rec);
-	if (err == Err::SUCCESS) {
+	Error::Code err = _getRecord(key, rec);
+	if (err == Error::SUCCESS) {
 		value = rec.value;
 	}
 	return err;
 }
 
-Err::Code Database::exist(const string& key) {
+Error::Code DatabaseModel::exist(const string& key) {
 	RWLockPtr rwlock = _listRWLock.at((hashF(key) % _listRWLock.size()));
 	Poco::ScopedReadRWLock readLock(*rwlock); //read lock
 
 	Record rec;
-	Err::Code err = _getRecord(key, rec);
+	Error::Code err = _getRecord(key, rec);
 	return err;
 }
 
-Err::Code Database::put(const string& key, const string& value) {
+Error::Code DatabaseModel::put(const string& key, const string& value) {
+	if (_isPutDataValid(key, value)) {
+		return Error::PARAM_OVERSIZE;
+	}
 	RWLockPtr rwlock = _listRWLock.at((hashF(key) % _listRWLock.size()));
 	Poco::ScopedWriteRWLock writeLock(*rwlock); //write lock	
 	
 	uint64_t recOff = _getRecordOffset(key);
-	Err::Code err;
+	Error::Code err;
 	if (recOff > 0) { //offset > 0 mean we are overwrite an exist record
 		err = _storage->writeRecord(key, value, recOff); //only overwrite value
 		return err;
@@ -149,13 +160,13 @@ Err::Code Database::put(const string& key, const string& value) {
 	}
 	
 	err = _storage->writeRecord(rec, offsetToWrite); //write record to disk
-	if (err != Err::SUCCESS){
+	if (err != Error::SUCCESS){
 		return err;
 	}
 	
 	err = _index->addRecord(key, offsetToWrite); //add record to index
 	
-	if (err != Err::SUCCESS){
+	if (err != Error::SUCCESS){
 		return err;
 	}
 	
@@ -163,7 +174,7 @@ Err::Code Database::put(const string& key, const string& value) {
 	if (reuseSlot) {
 		_meta->numberOfFreeSlot--;
 	} else {
-		_meta->currentOffset += RECORD_MAX_SIZE;
+		_meta->currentOffset += DBConfig::instance()->record_max_size;
 	}
 	_meta->numberOfRec++;
 	_storage->checkDataSize();
@@ -171,18 +182,18 @@ Err::Code Database::put(const string& key, const string& value) {
 	return err;
 }
 
-Err::Code Database::remove(const string& key) {
+Error::Code DatabaseModel::remove(const string& key) {
 	RWLockPtr rwlock = _listRWLock.at((hashF(key) % _listRWLock.size()));
 	Poco::ScopedWriteRWLock writeLock(*rwlock); //write lock
 	
 	uint64_t recOff = _getRecordOffset(key);
 
 	if (recOff < 1) {
-		return Err::NOT_EXIST;
+		return Error::NOT_EXIST;
 	}
 
-	Err::Code err = _index->removeRecord(key, recOff);
-	if (err == Err::SUCCESS) {
+	Error::Code err = _index->removeRecord(key, recOff);
+	if (err == Error::SUCCESS) {
 		_listEmptyRecordOffset[_meta->numberOfFreeSlot] = recOff; // add removed record to list free slot for reusing
 		_meta->numberOfFreeSlot++; //increase free slot
 		_meta->numberOfRec--; //decrease num of record

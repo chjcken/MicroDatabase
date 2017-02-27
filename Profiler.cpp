@@ -10,14 +10,14 @@
 Poco::Mutex Profiler::_mutex;
 std::map<std::string, ProfileStat> Profiler::_apiMap;
 
-Err::Code Profiler::getAPIStat(const std::string& api, ProfileStat& stat) {
+Error::Code Profiler::getAPIStat(const std::string& api, ProfileStat& stat) {
 	Poco::Mutex::ScopedLock lock(_mutex);
 	std::map<std::string, ProfileStat>::iterator iter = _apiMap.find(api);
 	if (iter == _apiMap.end()){
-		return Err::NOT_EXIST;
+		return Error::NOT_EXIST;
 	}
 	stat = iter->second;
-	return Err::SUCCESS;
+	return Error::SUCCESS;
 }
 
 Profiler::Profiler(const std::string& api) : _apiName(api) {

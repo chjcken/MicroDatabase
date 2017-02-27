@@ -19,7 +19,7 @@ class Profiler {
 public:
     Profiler(const std::string& api);
     ~Profiler();
-    static Err::Code getAPIStat(const std::string& api, ProfileStat& stat);
+    static Error::Code getAPIStat(const std::string& api, ProfileStat& stat);
     
 private:    
     static Poco::Mutex _mutex;
